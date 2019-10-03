@@ -1,0 +1,17 @@
+{
+  "name": "list-plus",
+  "version": "0.5.1",
+  "description": "Simple enhanced array library",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Reed Lawrence",
+  "license": "ISC",
+  "dependencies": {
+    "lodash": "^4.17.15"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.141"
+  }
+}
