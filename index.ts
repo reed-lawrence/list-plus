@@ -685,6 +685,16 @@ export class List<T> extends Array<T>{
     return this.all(predicate);
   }
 
+  splice(start: number, deleteCount?: number, ...items: T[]) {
+    const arr = this.toArray();
+    const deleted = arr.splice(start, deleteCount, ...items);
+    this.length = 0;
+    for (const obj of arr) {
+      this.push(obj);
+    }
+    return new List(deleted);
+  }
+
 
 
 

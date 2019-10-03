@@ -18,17 +18,13 @@ var List = /** @class */ (function (_super) {
     __extends(List, _super);
     function List(init, decouple) {
         if (decouple === void 0) { decouple = false; }
-        var _this = _super.apply(this, init) || this;
+        var _this = this;
+        var initVals = decouple ? lodash_1.cloneDeep(init) : init;
+        _this = _super.apply(this, initVals) || this;
         Object.setPrototypeOf(_this, Object.create(List.prototype));
         _this.decouple = decouple;
         return _this;
     }
-    List.prototype.print = function () {
-        for (var _i = 0, _a = this; _i < _a.length; _i++) {
-            var obj = _a[_i];
-            console.log(obj);
-        }
-    };
     /**
      * Determines whether every element in the List<T> matches the conditions defined by the specified predicate.
      * @param predicate Callback function of the conditions to check against the elements.
@@ -183,9 +179,10 @@ var List = /** @class */ (function (_super) {
      * @param index The zero-based index of the element to retrieve.
      * @returns The decoupled element at the specified position in the source sequence.
      */
-    List.prototype.elementAt = function (index) {
+    List.prototype.elementAt = function (index, decouple) {
+        if (decouple === void 0) { decouple = this.decouple; }
         if (index && this.length > 0) {
-            return lodash_1.cloneDeep(this[index]);
+            return decouple ? lodash_1.cloneDeep(this[index]) : this[index];
         }
         return undefined;
     };
@@ -196,10 +193,14 @@ var List = /** @class */ (function (_super) {
      * @param default Optional object to return if index is out of range or does not exist.
      * @returns The decoupled element at the specified position in the source sequence or the default specified.
      */
-    List.prototype.elementAtOrDefault = function (index, defaultObj) {
+    List.prototype.elementAtOrDefault = function (index, defaultObj, decouple) {
+        if (decouple === void 0) { decouple = this.decouple; }
         var elem = this.elementAt(index);
         if (!elem) {
-            return lodash_1.cloneDeep(defaultObj);
+            return decouple ? lodash_1.cloneDeep(defaultObj) : defaultObj;
+        }
+        else {
+            return elem;
         }
     };
     /**
@@ -250,7 +251,7 @@ var List = /** @class */ (function (_super) {
             return elem;
         }
         else if (!elem && defaultObj) {
-            return lodash_1.cloneDeep(defaultObj);
+            return decouple ? lodash_1.cloneDeep(defaultObj) : defaultObj;
         }
         else {
             return undefined;
@@ -261,15 +262,16 @@ var List = /** @class */ (function (_super) {
      * @param key Callback function to specify Key to group by
      * @returns Returns new List of GroupList<T> on Key of U
      */
-    List.prototype.groupBy = function (key) {
+    List.prototype.groupBy = function (key, decouple) {
+        if (decouple === void 0) { decouple = this.decouple; }
         var output = new List();
         var _loop_2 = function (obj) {
             var index = output.findIndex(function (o) { return o.key === key(obj); });
             if (index === -1) {
-                output.append({ key: lodash_1.cloneDeep(key(obj)), collection: new List([lodash_1.cloneDeep(obj)]) });
+                output.append({ key: decouple ? lodash_1.cloneDeep(key(obj)) : key(obj), collection: new List([obj], decouple) });
             }
             else {
-                output[index].collection.append(lodash_1.cloneDeep(obj));
+                output[index].collection.append(decouple ? lodash_1.cloneDeep(obj) : obj);
             }
         };
         for (var _i = 0, _a = this; _i < _a.length; _i++) {
@@ -291,7 +293,8 @@ var List = /** @class */ (function (_super) {
      * @typedef TKey The type of the keys returned by the key selector functions.
      * @typedef TResult The type of the result elements.
      */
-    List.prototype.joinBy = function (inner, outerKeySelector, innerKeySelector, resultSelector) {
+    List.prototype.joinBy = function (inner, outerKeySelector, innerKeySelector, resultSelector, decouple) {
+        if (decouple === void 0) { decouple = this.decouple; }
         var output = new List();
         for (var _i = 0, inner_1 = inner; _i < inner_1.length; _i++) {
             var _inner = inner_1[_i];
@@ -302,7 +305,7 @@ var List = /** @class */ (function (_super) {
                 }
             }
         }
-        return lodash_1.cloneDeep(output);
+        return decouple ? lodash_1.cloneDeep(output) : output;
     };
     /**
      * Returns the last element of a sequence that satisfies a specified condition or the last element if a condition is not specified.
@@ -531,8 +534,10 @@ var List = /** @class */ (function (_super) {
      * @param array The arrays to inspect.
      * @returns New sorted and decoupled List<T> of unioned objects
      */
-    List.prototype.union = function (collection) {
-        return new List(lodash_1.cloneDeep(lodash_1.union(this, collection)));
+    List.prototype.union = function (collection, decouple) {
+        if (decouple === void 0) { decouple = this.decouple; }
+        var arr = lodash_1.union(this, collection);
+        return new List(arr, decouple);
     };
     // TODO: zip();
     /**
@@ -682,6 +687,20 @@ var List = /** @class */ (function (_super) {
      */
     List.prototype.trueForAll = function (predicate) {
         return this.all(predicate);
+    };
+    List.prototype.splice = function (start, deleteCount) {
+        var items = [];
+        for (var _i = 2; _i < arguments.length; _i++) {
+            items[_i - 2] = arguments[_i];
+        }
+        var arr = this.toArray();
+        var deleted = arr.splice.apply(arr, [start, deleteCount].concat(items));
+        this.length = 0;
+        for (var _a = 0, arr_1 = arr; _a < arr_1.length; _a++) {
+            var obj = arr_1[_a];
+            this.push(obj);
+        }
+        return new List(deleted);
     };
     return List;
 }(Array));
