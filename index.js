@@ -12,7 +12,14 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-exports.__esModule = true;
+var __spreadArrays = (this && this.__spreadArrays) || function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
+    for (var r = Array(s), k = 0, i = 0; i < il; i++)
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++)
+            r[k] = a[j];
+    return r;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
 var lodash_1 = require("lodash");
 var List = /** @class */ (function (_super) {
     __extends(List, _super);
@@ -20,7 +27,12 @@ var List = /** @class */ (function (_super) {
         if (decouple === void 0) { decouple = false; }
         var _this = this;
         var initVals = decouple ? lodash_1.cloneDeep(init) : init;
-        _this = _super.apply(this, initVals) || this;
+        if (initVals) {
+            _this = _super.apply(this, initVals) || this;
+        }
+        else {
+            _this = _super.call(this) || this;
+        }
         Object.setPrototypeOf(_this, Object.create(List.prototype));
         _this.decouple = decouple;
         return _this;
@@ -104,11 +116,28 @@ var List = /** @class */ (function (_super) {
         return sum / this.length;
     };
     /**
+     * ASYNC
+     * Function that finds the average of a specified List collection
+     * @param key The key to specifiy the numeric value to average
+     */
+    List.prototype.averageAsync = function (key) {
+        var _this = this;
+        return new Promise(function (resolve) { return resolve(_this.average(key)); });
+    };
+    /**
      * Override method to force TypeScript compiler to treat values as specified by the type declaration.
      * **For type conversions use List<T>.convert() or List<T>.map()**
      */
     List.prototype.cast = function () {
         return new List(this.map(function (i) { return i; }));
+    };
+    /**
+     * ASYNC - Override method to force TypeScript compiler to treat values as specified by the type declaration.
+     * **For type conversions use List<T>.convert() or List<T>.map()**
+     */
+    List.prototype.castAsync = function () {
+        var _this = this;
+        return new Promise(function (resolve) { return resolve(_this.cast()); });
     };
     /**
      * Performs a deep recursive comparison if an object exists in the List<T>
@@ -122,6 +151,14 @@ var List = /** @class */ (function (_super) {
             }
         }
         return false;
+    };
+    /**
+     * ASYNC - Performs a deep recursive comparison if an object exists in the List<T>
+     * @returns Returns boolean of expression
+     */
+    List.prototype.containsAsync = function (obj) {
+        var _this = this;
+        return new Promise(function (resolve) { return resolve(_this.contains(obj)); });
     };
     /**
      * Get the count of elements in List<T> as defined by a predicate callback function.
@@ -141,6 +178,14 @@ var List = /** @class */ (function (_super) {
             }
             return count;
         }
+    };
+    /**
+     * ASYNC - Get the count of elements in List<T> as defined by a predicate callback function.
+     * @param predicate Callback function of the conditions to check against the elements
+     */
+    List.prototype.countAsync = function (predicate) {
+        var _this = this;
+        return new Promise(function (resolve) { return resolve(_this.count(predicate)); });
     };
     // TODO: defaultIfEmpty()
     /**
@@ -167,12 +212,9 @@ var List = /** @class */ (function (_super) {
      * @param key Optional specification of key to compare uniqueness
      * @returns An List<T> that contains distinct elements from the source sequence.
      */
-    List.prototype.distinctAsync = function (key) {
+    List.prototype.distinctAsync = function (comparer) {
         var _this = this;
-        return new Promise(function (resolve) {
-            var output = _this.distinct(key);
-            resolve(output);
-        });
+        return new Promise(function (resolve) { return resolve(_this.distinct(comparer)); });
     };
     /**
      * Returns the element at a specified index in a sequence.
@@ -185,6 +227,16 @@ var List = /** @class */ (function (_super) {
             return decouple ? lodash_1.cloneDeep(this[index]) : this[index];
         }
         return undefined;
+    };
+    /**
+     * ASYNC - Returns the element at a specified index in a sequence.
+     * @param index The zero-based index of the element to retrieve.
+     * @returns The decoupled element at the specified position in the source sequence.
+     */
+    List.prototype.elementAtAsync = function (index, decouple) {
+        var _this = this;
+        if (decouple === void 0) { decouple = this.decouple; }
+        return new Promise(function (resolve) { return resolve(_this.elementAt(index, decouple)); });
     };
     /**
      * Returns the element at a specified index in a sequence or a default value if the index is out of range. You may optionally specify
@@ -238,24 +290,42 @@ var List = /** @class */ (function (_super) {
         }
     };
     /**
+     * Returns the first element that matches the specified criteria. Returns undefined if not found.
+     * Note: Decouples from List<T>.
+     * @param predicate The expression to evaluate
+     * @returns First matching element or undefined if not found.
+     */
+    List.prototype.firstAsync = function (predicate, decouple) {
+        var _this = this;
+        if (decouple === void 0) { decouple = this.decouple; }
+        return new Promise(function (resolve) { return resolve(_this.first(predicate, decouple)); });
+    };
+    /**
      * Returns the first element that matches the specified criteria. Returns the optionally specified default object or null if not specified.
      * Note: Decouples from List<T>.
      * @param predicate The expression to evaluate
      * @returns First matching element or optionally specified default (null if not specified).
      */
-    List.prototype.firstOrDefault = function (predicate, defaultObj, decouple) {
-        if (predicate === void 0) { predicate = null; }
+    List.prototype.firstOrDefault = function (defaultObj, predicate, decouple) {
         if (decouple === void 0) { decouple = this.decouple; }
         var elem = this.first(predicate, decouple);
         if (elem) {
             return elem;
         }
-        else if (!elem && defaultObj) {
+        else {
             return decouple ? lodash_1.cloneDeep(defaultObj) : defaultObj;
         }
-        else {
-            return undefined;
-        }
+    };
+    /**
+     * ASYNC - Returns the first element that matches the specified criteria. Returns the optionally specified default object or null if not specified.
+     * Note: Decouples from List<T>.
+     * @param predicate The expression to evaluate
+     * @returns First matching element or optionally specified default (null if not specified).
+     */
+    List.prototype.firstOrDefaultAsync = function (defaultObj, predicate, decouple) {
+        var _this = this;
+        if (decouple === void 0) { decouple = this.decouple; }
+        return new Promise(function (resolve) { return resolve(_this.firstOrDefault(defaultObj, predicate, decouple)); });
     };
     /**
      * Group the List<T> by a specified Key. Note: Decouples groups from original List<T>
@@ -279,6 +349,16 @@ var List = /** @class */ (function (_super) {
             _loop_2(obj);
         }
         return output;
+    };
+    /**
+     * ASYNC = Group the List<T> by a specified Key. Note: Decouples groups from original List<T>
+     * @param key Callback function to specify Key to group by
+     * @returns Returns new List of GroupList<T> on Key of U
+     */
+    List.prototype.groupByAsync = function (key, decouple) {
+        var _this = this;
+        if (decouple === void 0) { decouple = this.decouple; }
+        return new Promise(function (resolve) { return resolve(_this.groupBy(key, decouple)); });
     };
     // TODO: groupJoin()
     // TODO: intersect()
@@ -308,11 +388,29 @@ var List = /** @class */ (function (_super) {
         return decouple ? lodash_1.cloneDeep(output) : output;
     };
     /**
+     * ASYNC - Correlates the elements of two sequences based on matching keys. The default equality comparer is used to compare keys.
+     * @param inner The sequence to join to the first sequence.
+     * @param outerKeySelector A function to extract the join key from each element of the first sequence.
+     * @param innerKeySelector A function to extract the join key from each element of the second sequence.
+     * @param resultSelector A function to create a result element from two matching elements.
+     * @returns Returns decoupled List<TResult> with elements that are obtained by performing an inner join on two sequences.
+     * @typedef TInner The type of the elements of the second sequence.
+     * @typedef TKey The type of the keys returned by the key selector functions.
+     * @typedef TResult The type of the result elements.
+     */
+    List.prototype.joinByAsync = function (inner, outerKeySelector, innerKeySelector, resultSelector, decouple) {
+        var _this = this;
+        if (decouple === void 0) { decouple = this.decouple; }
+        return new Promise(function (resolve) { return resolve(_this.joinBy(inner, outerKeySelector, innerKeySelector, resultSelector, decouple)); });
+    };
+    /**
      * Returns the last element of a sequence that satisfies a specified condition or the last element if a condition is not specified.
      * @param predicate A function to test each element for a condition.
+     * @param decouple Optional specification to deep clone the resulting object and decouple object references
      * @returns The last element in the List. Note: Does not decouple the returned object.
      */
-    List.prototype.last = function (predicate) {
+    List.prototype.last = function (predicate, decouple) {
+        if (decouple === void 0) { decouple = this.decouple; }
         if (!predicate) {
             return this[this.length - 1];
         }
@@ -323,25 +421,57 @@ var List = /** @class */ (function (_super) {
                     output = this[i];
                 }
             }
-            return output;
+            if (output) {
+                return decouple ? lodash_1.cloneDeep(output) : output;
+            }
+            else {
+                return undefined;
+            }
         }
+    };
+    /**
+     * ASYNC - Returns the last element of a sequence that satisfies a specified condition or the last element if a condition is not specified.
+     * @param predicate A function to test each element for a condition.
+     * @returns The last element in the List. Note: Does not decouple the returned object.
+     */
+    List.prototype.lastAsync = function (predicate, decouple) {
+        var _this = this;
+        if (decouple === void 0) { decouple = this.decouple; }
+        return new Promise(function (resolve) { return resolve(_this.last(predicate, decouple)); });
     };
     /**
      * Returns the last element of a sequence that satisfies a specified condition or the last element if a condition is not specified. Optionally declare default value if not found.
      * @param predicate A function to test each element for a condition.
-     * @param _default Optional default value. Null if not specified.
+     * @param defaultObj Optional default value. Null if not specified.
+     * @param decouple Optional specification to deep clone the resulting object and decouple object references
      * @returns The last element in the List<T>. Note: Does not decouple the returned object.
      */
-    List.prototype.lastOrDefault = function (predicate, defaultObj) {
-        if (predicate === void 0) { predicate = null; }
-        var obj = this.last(predicate);
+    List.prototype.lastOrDefault = function (defaultObj, predicate, decouple) {
+        if (decouple === void 0) { decouple = this.decouple; }
+        var obj = this.last(predicate, decouple);
         if (!obj) {
-            return defaultObj;
+            return decouple ? lodash_1.cloneDeep(defaultObj) : defaultObj;
         }
         else {
-            return obj;
+            return decouple ? lodash_1.cloneDeep(obj) : obj;
         }
     };
+    /**
+     * ASYNC - Returns the last element of a sequence that satisfies a specified condition or the last element if a condition is not specified. Optionally declare default value if not found.
+     * @param predicate A function to test each element for a condition.
+     * @param defaultObj Optional default value. Null if not specified.
+     * @param decouple Optional specification to deep clone the resulting object and decouple object references
+     * @returns The last element in the List<T>. Note: Does not decouple the returned object.
+     */
+    List.prototype.lastOrDefaultAsync = function (defaultObj, predicate, decouple) {
+        var _this = this;
+        if (decouple === void 0) { decouple = this.decouple; }
+        return new Promise(function (resolve) { return resolve(_this.lastOrDefault(defaultObj, predicate, decouple)); });
+    };
+    /**
+     * Returns the larger of a set of supplied numeric expressions.
+     * @param key optional key to specify which parameter to find the max of
+     */
     List.prototype.max = function (key) {
         if (key) {
             return Math.max.apply(Math, this.map(function (o) { return key(o); }));
@@ -350,6 +480,18 @@ var List = /** @class */ (function (_super) {
             return Math.max.apply(Math, this);
         }
     };
+    /**
+     * ASYNC - Returns the larger of a set of supplied numeric expressions.
+     * @param key optional key to specify which parameter to find the max of
+     */
+    List.prototype.maxAsync = function (key) {
+        var _this = this;
+        return new Promise(function (resolve) { return resolve(_this.max(key)); });
+    };
+    /**
+     * Returns the smaller of a set of supplied numeric expressions.
+     * @param key optional key to specify which parameter to find the min of
+     */
     List.prototype.min = function (key) {
         if (key) {
             return Math.min.apply(Math, this.map(function (o) { return key(o); }));
@@ -359,35 +501,53 @@ var List = /** @class */ (function (_super) {
         }
     };
     /**
-     * TODO: Needs improvement
-     * Filter and return a new decoupled List<U> containing only elements of a specified type.
-     * @param type Pick from predefined types, or pass a Class reference to filter by
+     * ASYNC - Returns the smaller of a set of supplied numeric expressions.
+     * @param key optional key to specify which parameter to find the min of
+     */
+    List.prototype.minAsync = function (key) {
+        var _this = this;
+        return new Promise(function (resolve) { return resolve(_this.min(key)); });
+    };
+    /**
+     * Filter and return a List<U> containing only elements of a specified type.
+     * @param type Class constructor reference of type to compare to. Will match and return primitive types as well as objects of primitive types.
+     * Ex. Type String will return values containing '123' and [String: '123'].
      * @returns Returns List<U>
      */
     List.prototype.ofType = function (type) {
-        var output = new List();
-        var objectKeys = Object.keys(type);
-        for (var i = 0; i < this.length; i++) {
-            if (typeof type === 'object') {
-                var allKeysMatch = true;
-                var _keys = Object.keys(this[i]);
-                for (var j = 0; j < objectKeys.length; j++) {
-                    var exists = _keys.indexOf(objectKeys[j]) !== -1;
-                    if (exists === false) {
-                        allKeysMatch = false;
-                    }
-                }
-                if (allKeysMatch === true) {
-                    output.append(this[i]);
-                }
+        if (type === undefined) {
+            return new List(this.filter(function (o) { return o === undefined; }));
+        }
+        else if (type === null) {
+            return new List(this.filter(function (o) { return o === null; }));
+        }
+        else {
+            if (type === String.prototype.constructor) {
+                return new List(this.filter(function (o) { return typeof o === 'string' || o instanceof String; }));
+            }
+            else if (type === Number.prototype.constructor) {
+                return new List(this.filter(function (o) { return typeof o === 'number' || o instanceof Number; }));
+            }
+            else if (type === Boolean.prototype.constructor) {
+                return new List(this.filter(function (o) { return typeof o === 'boolean' || o instanceof Boolean; }));
+            }
+            else if (type === Symbol.prototype.constructor) {
+                return new List(this.filter(function (o) { return typeof o === 'symbol' || o instanceof Symbol; }));
+            }
+            else if (type === Function.prototype.constructor) {
+                return new List(this.filter(function (o) { return typeof o === 'function' || o instanceof Function; }));
             }
             else {
-                if (typeof this[i] === type) {
-                    output.append(this[i]);
-                }
+                return new List(this.filter(function (o) {
+                    if (o) {
+                        return type === Object.getPrototypeOf(o).constructor;
+                    }
+                    else {
+                        return false;
+                    }
+                }));
             }
         }
-        return this.decouple ? lodash_1.cloneDeep(output) : output;
     };
     /**
      * Orders a List<T>. Specify an optional key and Ascending or Descending order.
@@ -395,12 +555,11 @@ var List = /** @class */ (function (_super) {
      * @param order Specify 'asc' for Ascending, 'desc' for Descending. Ascending by default.
      */
     List.prototype.orderBy = function (key, order) {
-        if (key === void 0) { key = null; }
         if (order === void 0) { order = 'asc'; }
         if (order !== 'asc' && order !== 'desc') {
             throw new Error('Argument Exception: order must be asc or desc.');
         }
-        if (key !== null) {
+        if (key) {
             if (order === 'asc') {
                 this.sort(function (a, b) { return key(a) > key(b) ? 1 : key(a) < key(b) ? -1 : 0; });
             }
@@ -432,20 +591,20 @@ var List = /** @class */ (function (_super) {
         return this;
     };
     List.prototype.getRange = function (start, end) {
-        if (start > this.length - 1) {
+        if (start && start > this.length - 1) {
             throw new Error('Index out of range exception. The specified index ' + start + ' does not exist in target List.');
         }
-        else if (end > this.length - 1) {
+        else if (end && end > this.length - 1) {
             throw new Error('Index out of range exception. The specified index ' + end + ' does not exist in target List.');
         }
-        else if (start < 0) {
+        else if (start && start < 0) {
             throw new Error('Index out of range exception. The specified index ' + start + ' does not exist in target List.');
         }
-        else if (end < 0) {
+        else if (end && end < 0) {
             throw new Error('Index out of range exception. The specified index ' + end + ' does not exist in target List.');
         }
         else if ((start && end) && (start > end)) {
-            throw new Error('Starting index must be less than or equal to the ending index in the range method');
+            throw new Error('Starting index must be less than or equal to the ending index in the getRange method');
         }
         var output = new List();
         if (!start && end) {
@@ -458,13 +617,8 @@ var List = /** @class */ (function (_super) {
                 output.append(this[i]);
             }
         }
-        else if (!start && !end) {
-            for (var i = start; i <= end; i++) {
-                output.append(this[i]);
-            }
-        }
         else {
-            throw new Error('rannge must specify either start, end, or both.');
+            throw new Error('getRange must specify either start, end, or both.');
         }
         return output;
     };
@@ -633,8 +787,18 @@ var List = /** @class */ (function (_super) {
      * @param _default Optional default value. Null if not specified.
      * @returns The last element in the List. Note: Does not decouple the returned object.
      */
-    List.prototype.findLast = function (predicate, defaultObj) {
-        return this.lastOrDefault(predicate, defaultObj);
+    List.prototype.findLast = function (predicate, defaultObj, decouple) {
+        if (decouple === void 0) { decouple = this.decouple; }
+        var obj = this.last(predicate, decouple);
+        if (obj) {
+            return decouple ? lodash_1.cloneDeep(obj) : obj;
+        }
+        else if (defaultObj) {
+            return decouple ? lodash_1.cloneDeep(defaultObj) : defaultObj;
+        }
+        else {
+            return undefined;
+        }
     };
     /**
      * Inserts an element into the List<T> at the specified index.
@@ -651,7 +815,7 @@ var List = /** @class */ (function (_super) {
      * @param atIndex The zero-based index at which the new elements should be inserted.
      */
     List.prototype.insertRange = function (objs, atIndex) {
-        this.splice.apply(this, [atIndex, 0].concat(objs));
+        this.splice.apply(this, __spreadArrays([atIndex, 0], objs));
         return;
     };
     /**
@@ -694,7 +858,7 @@ var List = /** @class */ (function (_super) {
             items[_i - 2] = arguments[_i];
         }
         var arr = this.toArray();
-        var deleted = arr.splice.apply(arr, [start, deleteCount].concat(items));
+        var deleted = arr.splice.apply(arr, __spreadArrays([start, deleteCount], items));
         this.length = 0;
         for (var _a = 0, arr_1 = arr; _a < arr_1.length; _a++) {
             var obj = arr_1[_a];

@@ -5,7 +5,11 @@ export class List<T> extends Array<T>{
 
   constructor(init?: Array<T>, decouple = false) {
     const initVals = decouple ? cloneDeep(init) : init;
-    super(...initVals);
+    if (initVals) {
+      super(...initVals);
+    } else {
+      super();
+    }
     Object.setPrototypeOf(this, Object.create(List.prototype));
 
     this.decouple = decouple;
@@ -93,11 +97,28 @@ export class List<T> extends Array<T>{
   }
 
   /**
+   * ASYNC
+   * Function that finds the average of a specified List collection
+   * @param key The key to specifiy the numeric value to average
+   */
+  averageAsync(key?: (o: T) => number) {
+    return new Promise(resolve => resolve(this.average(key)));
+  }
+
+  /**
    * Override method to force TypeScript compiler to treat values as specified by the type declaration. 
    * **For type conversions use List<T>.convert() or List<T>.map()** 
    */
   cast<CastTo>() {
     return new List<CastTo>(this.map(i => <any>i));
+  }
+
+  /**
+   * ASYNC - Override method to force TypeScript compiler to treat values as specified by the type declaration. 
+   * **For type conversions use List<T>.convert() or List<T>.map()** 
+   */
+  castAsync<CastTo>() {
+    return new Promise<List<CastTo>>(resolve => resolve(this.cast<CastTo>()));
   }
 
   /**
@@ -111,6 +132,14 @@ export class List<T> extends Array<T>{
       }
     }
     return false;
+  }
+
+  /**
+   * ASYNC - Performs a deep recursive comparison if an object exists in the List<T>
+   * @returns Returns boolean of expression
+   */
+  containsAsync(obj: T) {
+    return new Promise<boolean>(resolve => resolve(this.contains(obj)))
   }
 
   /**
@@ -130,6 +159,14 @@ export class List<T> extends Array<T>{
       }
       return count;
     }
+  }
+
+  /**
+   * ASYNC - Get the count of elements in List<T> as defined by a predicate callback function.
+   * @param predicate Callback function of the conditions to check against the elements
+   */
+  countAsync(predicate?: (o: T) => boolean) {
+    return new Promise<number>(resolve => resolve(this.count(predicate)));
   }
 
   // TODO: defaultIfEmpty()
@@ -155,11 +192,8 @@ export class List<T> extends Array<T>{
    * @param key Optional specification of key to compare uniqueness
    * @returns An List<T> that contains distinct elements from the source sequence.
    */
-  distinctAsync<U>(key?: (o: T) => U) {
-    return new Promise<List<T>>(resolve => {
-      const output = this.distinct(key);
-      resolve(output);
-    });
+  distinctAsync<U>(comparer?: (o: T) => U): Promise<List<T>> {
+    return new Promise<List<T>>(resolve => resolve(this.distinct(comparer)));
   }
 
   /**
@@ -167,11 +201,20 @@ export class List<T> extends Array<T>{
    * @param index The zero-based index of the element to retrieve.
    * @returns The decoupled element at the specified position in the source sequence.
    */
-  elementAt(index: number, decouple = this.decouple): T {
+  elementAt(index: number, decouple = this.decouple): T | undefined {
     if (index && this.length > 0) {
       return decouple ? cloneDeep(this[index]) : this[index];
     }
     return undefined;
+  }
+
+  /**
+   * ASYNC - Returns the element at a specified index in a sequence.
+   * @param index The zero-based index of the element to retrieve.
+   * @returns The decoupled element at the specified position in the source sequence.
+   */
+  elementAtAsync(index: number, decouple = this.decouple): Promise<T> {
+    return new Promise<T>(resolve => resolve(this.elementAt(index, decouple)));
   }
 
   /**
@@ -208,7 +251,7 @@ export class List<T> extends Array<T>{
    * @param predicate The expression to evaluate
    * @returns First matching element or undefined if not found.
    */
-  first(predicate?: (o: T) => boolean, decouple = this.decouple): T {
+  first(predicate?: (o: T) => boolean, decouple = this.decouple): T | undefined {
     if (!predicate) {
       if (this.length > 0) {
         return decouple === true ? cloneDeep(this[0]) : this[0];
@@ -226,20 +269,38 @@ export class List<T> extends Array<T>{
   }
 
   /**
+   * Returns the first element that matches the specified criteria. Returns undefined if not found.
+   * Note: Decouples from List<T>.
+   * @param predicate The expression to evaluate
+   * @returns First matching element or undefined if not found.
+   */
+  firstAsync(predicate?: (o: T) => boolean, decouple = this.decouple): Promise<T | undefined> {
+    return new Promise<T | undefined>(resolve => resolve(this.first(predicate, decouple)));
+  }
+
+  /**
    * Returns the first element that matches the specified criteria. Returns the optionally specified default object or null if not specified.
    * Note: Decouples from List<T>.
    * @param predicate The expression to evaluate
    * @returns First matching element or optionally specified default (null if not specified).
    */
-  firstOrDefault(predicate: (o: T) => boolean = null, defaultObj?: T, decouple = this.decouple): T {
+  firstOrDefault(defaultObj: T, predicate?: (o: T) => boolean, decouple = this.decouple): T {
     const elem = this.first(predicate, decouple);
     if (elem) {
       return elem;
-    } else if (!elem && defaultObj) {
-      return decouple ? cloneDeep(defaultObj) : defaultObj;
     } else {
-      return undefined;
+      return decouple ? cloneDeep(defaultObj) : defaultObj;
     }
+  }
+
+  /**
+   * ASYNC - Returns the first element that matches the specified criteria. Returns the optionally specified default object or null if not specified.
+   * Note: Decouples from List<T>.
+   * @param predicate The expression to evaluate
+   * @returns First matching element or optionally specified default (null if not specified).
+   */
+  firstOrDefaultAsync(defaultObj: T, predicate?: (o: T) => boolean, decouple = this.decouple): Promise<T> {
+    return new Promise<T>(resolve => resolve(this.firstOrDefault(defaultObj, predicate, decouple)));
   }
 
   /**
@@ -261,6 +322,15 @@ export class List<T> extends Array<T>{
     return output;
   }
 
+  /**
+   * ASYNC = Group the List<T> by a specified Key. Note: Decouples groups from original List<T>
+   * @param key Callback function to specify Key to group by
+   * @returns Returns new List of GroupList<T> on Key of U
+   */
+  groupByAsync<U>(key: (o: T) => U, decouple = this.decouple) {
+    return new Promise<List<{ key: U; collection: List<T> }>>(resolve => resolve(this.groupBy(key, decouple)));
+  }
+
   // TODO: groupJoin()
 
   // TODO: intersect()
@@ -276,7 +346,7 @@ export class List<T> extends Array<T>{
    * @typedef TKey The type of the keys returned by the key selector functions.
    * @typedef TResult The type of the result elements.
    */
-  joinBy<TInner, TKey, TResult>(inner: List<TInner> | TInner[], outerKeySelector: (o: T) => TKey, innerKeySelector: (o: TInner) => TKey, resultSelector: (outer: T, inner: TInner) => TResult, decouple = this.decouple) {
+  joinBy<TInner, TKey, TResult>(inner: List<TInner> | TInner[], outerKeySelector: (o: T) => TKey, innerKeySelector: (o: TInner) => TKey, resultSelector: (outer: T, inner: TInner) => TResult, decouple = this.decouple): List<TResult> {
     const output = new List<TResult>();
     for (const _inner of inner) {
       for (const _outer of this) {
@@ -289,39 +359,84 @@ export class List<T> extends Array<T>{
   }
 
   /**
+   * ASYNC - Correlates the elements of two sequences based on matching keys. The default equality comparer is used to compare keys.
+   * @param inner The sequence to join to the first sequence.
+   * @param outerKeySelector A function to extract the join key from each element of the first sequence.
+   * @param innerKeySelector A function to extract the join key from each element of the second sequence.
+   * @param resultSelector A function to create a result element from two matching elements.
+   * @returns Returns decoupled List<TResult> with elements that are obtained by performing an inner join on two sequences.
+   * @typedef TInner The type of the elements of the second sequence.
+   * @typedef TKey The type of the keys returned by the key selector functions.
+   * @typedef TResult The type of the result elements.
+   */
+  joinByAsync<TInner, TKey, TResult>(inner: List<TInner> | TInner[], outerKeySelector: (o: T) => TKey, innerKeySelector: (o: TInner) => TKey, resultSelector: (outer: T, inner: TInner) => TResult, decouple = this.decouple) {
+    return new Promise<List<TResult>>(resolve => resolve(this.joinBy(inner, outerKeySelector, innerKeySelector, resultSelector, decouple)));
+  }
+
+  /**
    * Returns the last element of a sequence that satisfies a specified condition or the last element if a condition is not specified.
    * @param predicate A function to test each element for a condition.
+   * @param decouple Optional specification to deep clone the resulting object and decouple object references
    * @returns The last element in the List. Note: Does not decouple the returned object.
    */
-  last(predicate?: (o: T) => boolean): T {
+  last(predicate?: (o: T) => boolean, decouple = this.decouple): T | undefined {
     if (!predicate) {
       return this[this.length - 1];
     } else {
-      let output: T = undefined;
+      let output: T | undefined = undefined;
       for (let i = 0; i < this.length; i++) {
         if (predicate(this[i]) === true) {
           output = this[i];
         }
       }
-      return output;
+      if (output) {
+        return decouple ? cloneDeep(output) : output;
+      } else {
+        return undefined;
+      }
     }
+  }
+
+  /**
+   * ASYNC - Returns the last element of a sequence that satisfies a specified condition or the last element if a condition is not specified.
+   * @param predicate A function to test each element for a condition.
+   * @returns The last element in the List. Note: Does not decouple the returned object.
+   */
+  lastAsync(predicate?: (o: T) => boolean, decouple = this.decouple): Promise<T | undefined> {
+    return new Promise<T | undefined>(resolve => resolve(this.last(predicate, decouple)));
   }
 
   /**
    * Returns the last element of a sequence that satisfies a specified condition or the last element if a condition is not specified. Optionally declare default value if not found.
    * @param predicate A function to test each element for a condition.
-   * @param _default Optional default value. Null if not specified.
+   * @param defaultObj Optional default value. Null if not specified.
+   * @param decouple Optional specification to deep clone the resulting object and decouple object references
    * @returns The last element in the List<T>. Note: Does not decouple the returned object.
    */
-  lastOrDefault(predicate: (o: T) => boolean = null, defaultObj?: T): T {
-    const obj = this.last(predicate);
+  lastOrDefault(defaultObj: T, predicate?: (o: T) => boolean, decouple = this.decouple): T {
+    const obj = this.last(predicate, decouple);
     if (!obj) {
-      return defaultObj;
+      return decouple ? cloneDeep(defaultObj) : defaultObj;
     } else {
-      return obj;
+      return decouple ? cloneDeep(obj) : obj;
     }
   }
 
+  /**
+   * ASYNC - Returns the last element of a sequence that satisfies a specified condition or the last element if a condition is not specified. Optionally declare default value if not found.
+   * @param predicate A function to test each element for a condition.
+   * @param defaultObj Optional default value. Null if not specified.
+   * @param decouple Optional specification to deep clone the resulting object and decouple object references
+   * @returns The last element in the List<T>. Note: Does not decouple the returned object.
+   */
+  lastOrDefaultAsync(defaultObj: T, predicate?: (o: T) => boolean, decouple = this.decouple) {
+    return new Promise<T>(resolve => resolve(this.lastOrDefault(defaultObj, predicate, decouple)));
+  }
+
+  /**
+   * Returns the larger of a set of supplied numeric expressions.
+   * @param key optional key to specify which parameter to find the max of
+   */
   max(key?: (o: T) => number) {
     if (key) {
       return Math.max(...this.map(o => key(o)));
@@ -330,6 +445,18 @@ export class List<T> extends Array<T>{
     }
   }
 
+  /**
+   * ASYNC - Returns the larger of a set of supplied numeric expressions.
+   * @param key optional key to specify which parameter to find the max of
+   */
+  maxAsync(key?: (o: T) => number) {
+    return new Promise<number>(resolve => resolve(this.max(key)));
+  }
+
+  /**
+   * Returns the smaller of a set of supplied numeric expressions.
+   * @param key optional key to specify which parameter to find the min of
+   */
   min(key?: (o: T) => number) {
     if (key) {
       return Math.min(...this.map(o => key(o)));
@@ -338,37 +465,46 @@ export class List<T> extends Array<T>{
     }
   }
 
-  private static _classTypes: 'string' | 'number' | 'undefined' | 'boolean' | 'bigint' | 'symbol' | 'object' | 'function';
   /**
-   * TODO: Needs improvement
-   * Filter and return a new decoupled List<U> containing only elements of a specified type.
-   * @param type Pick from predefined types, or pass a Class reference to filter by
+   * ASYNC - Returns the smaller of a set of supplied numeric expressions.
+   * @param key optional key to specify which parameter to find the min of
+   */
+  minAsync(key?: (o: T) => number) {
+    return new Promise<number>(resolve => resolve(this.min(key)));
+  }
+
+  /**
+   * Filter and return a List<U> containing only elements of a specified type.
+   * @param type Class constructor reference of type to compare to. Will match and return primitive types as well as objects of primitive types.
+   * Ex. Type String will return values containing '123' and [String: '123'].
    * @returns Returns List<U> 
    */
-  ofType<U>(type: typeof List._classTypes | U) {
-    const output = new List<U>();
-    const objectKeys = Object.keys(type);
-    for (let i = 0; i < this.length; i++) {
-      if (typeof type === 'object') {
-        let allKeysMatch = true;
-        const _keys = Object.keys(this[i]);
-        for (let j = 0; j < objectKeys.length; j++) {
-          let exists = _keys.indexOf(objectKeys[j]) !== -1;
-          if (exists === false) {
-            allKeysMatch = false;
-          }
-        }
-
-        if (allKeysMatch === true) {
-          output.append(<any>this[i]);
-        }
+  ofType<U>(type: { new(): U } | null | undefined): List<U> {
+    if (type === undefined) {
+      return new List<U>(this.filter(o => o === undefined) as any);
+    } else if (type === null) {
+      return new List<U>(this.filter(o => o === null) as any);
+    } else {
+      if (type === String.prototype.constructor) {
+        return new List<U>(this.filter(o => typeof o === 'string' || o instanceof String) as any);
+      } else if (type === Number.prototype.constructor) {
+        return new List<U>(this.filter(o => typeof o === 'number' || o instanceof Number) as any);
+      } else if (type === Boolean.prototype.constructor) {
+        return new List<U>(this.filter(o => typeof o === 'boolean' || o instanceof Boolean) as any);
+      } else if (type === Symbol.prototype.constructor) {
+        return new List<U>(this.filter(o => typeof o === 'symbol' || o instanceof Symbol) as any);
+      } else if (type === Function.prototype.constructor) {
+        return new List<U>(this.filter(o => typeof o === 'function' || o instanceof Function) as any);
       } else {
-        if (typeof this[i] === type) {
-          output.append(<any>this[i]);
-        }
+        return new List<U>(this.filter(o => {
+          if (o) {
+            return type === Object.getPrototypeOf(o).constructor
+          } else {
+            return false;
+          }
+        }) as any);
       }
     }
-    return this.decouple ? cloneDeep(output) : output;
   }
 
   /**
@@ -376,11 +512,11 @@ export class List<T> extends Array<T>{
    * @param key The callback to specify which parameter of <T> to order by
    * @param order Specify 'asc' for Ascending, 'desc' for Descending. Ascending by default.
    */
-  orderBy<U>(key: (o: T) => U = null, order: 'desc' | 'asc' = 'asc') {
+  orderBy<U>(key?: (o: T) => U, order: 'desc' | 'asc' = 'asc') {
     if (order !== 'asc' && order !== 'desc') {
       throw new Error('Argument Exception: order must be asc or desc.');
     }
-    if (key !== null) {
+    if (key) {
       if (order === 'asc') {
         this.sort((a, b) => key(a) > key(b) ? 1 : key(a) < key(b) ? -1 : 0);
       } else if (order === 'desc') {
@@ -407,16 +543,16 @@ export class List<T> extends Array<T>{
   }
 
   getRange(start?: number, end?: number) {
-    if (start > this.length - 1) {
+    if (start && start > this.length - 1) {
       throw new Error('Index out of range exception. The specified index ' + start + ' does not exist in target List.');
-    } else if (end > this.length - 1) {
+    } else if (end && end > this.length - 1) {
       throw new Error('Index out of range exception. The specified index ' + end + ' does not exist in target List.');
-    } else if (start < 0) {
+    } else if (start && start < 0) {
       throw new Error('Index out of range exception. The specified index ' + start + ' does not exist in target List.');
-    } else if (end < 0) {
+    } else if (end && end < 0) {
       throw new Error('Index out of range exception. The specified index ' + end + ' does not exist in target List.');
     } else if ((start && end) && (start > end)) {
-      throw new Error('Starting index must be less than or equal to the ending index in the range method');
+      throw new Error('Starting index must be less than or equal to the ending index in the getRange method');
     }
 
     const output = new List<T>();
@@ -428,12 +564,8 @@ export class List<T> extends Array<T>{
       for (let i = start; i < this.length; i++) {
         output.append(this[i]);
       }
-    } else if (!start && !end) {
-      for (let i = start; i <= end; i++) {
-        output.append(this[i]);
-      }
     } else {
-      throw new Error('rannge must specify either start, end, or both.');
+      throw new Error('getRange must specify either start, end, or both.');
     }
     return output;
   }
@@ -623,8 +755,15 @@ export class List<T> extends Array<T>{
    * @param _default Optional default value. Null if not specified.
    * @returns The last element in the List. Note: Does not decouple the returned object.
    */
-  findLast(predicate: (o: T) => boolean, defaultObj?: T): T {
-    return this.lastOrDefault(predicate, defaultObj);
+  findLast(predicate: (o: T) => boolean, defaultObj?: T, decouple = this.decouple): T | undefined {
+    const obj = this.last(predicate, decouple);
+    if (obj) {
+      return decouple ? cloneDeep(obj) : obj;
+    } else if (defaultObj) {
+      return decouple ? cloneDeep(defaultObj) : defaultObj;
+    } else {
+      return undefined;
+    }
   }
 
   /**
@@ -685,7 +824,7 @@ export class List<T> extends Array<T>{
     return this.all(predicate);
   }
 
-  splice(start: number, deleteCount?: number, ...items: T[]) {
+  splice(start: number, deleteCount: number, ...items: T[]) {
     const arr = this.toArray();
     const deleted = arr.splice(start, deleteCount, ...items);
     this.length = 0;
