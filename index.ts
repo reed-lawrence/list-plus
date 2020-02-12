@@ -1,19 +1,29 @@
-import { isEqual, cloneDeep, union, sortedIndex } from 'lodash';
+import { cloneDeep, isEqual, sortedIndex, union } from 'lodash';
+import { Subject } from 'rxjs';
+
+import { IEventType } from './event-type';
+
+export enum ListEventType {
+  Add = 'add',
+  Clear = 'clear',
+}
 
 export class List<T> extends Array<T>{
   private decouple: boolean;
 
   constructor(init?: Array<T>, decouple = false) {
-    const initVals = decouple ? cloneDeep(init) : init;
-    if (initVals) {
-      super(...initVals);
-    } else {
-      super();
-    }
+    super(...(init ? (decouple ? cloneDeep(init) : init) : []));
     Object.setPrototypeOf(this, Object.create(List.prototype));
-
     this.decouple = decouple;
   }
+
+  public events = new Subject<ListEventType>();
+
+  push(...objs: T[]) {
+    this.events.next(ListEventType.Add);
+    return this.length;
+  }
+
 
   /**
    * Determines whether every element in the List<T> matches the conditions defined by the specified predicate.
@@ -70,11 +80,13 @@ export class List<T> extends Array<T>{
 
   /**
    * appends a value to the end of the List<T>.
+   * Proxy for push and add
    * @param obj The object<T> to append to the List<T>
    * @returns Returns the modified List<T>
    */
   append(obj: T) {
-    this.push(obj);
+    this.events.next(ListEventType.Add);
+    this[this.length] = obj;
     return this;
   }
 
@@ -662,6 +674,7 @@ export class List<T> extends Array<T>{
    * @param obj The object to be added to the end of the List<T>. The value can be null for reference types.
    */
   add(obj: T) {
+    this.events.next(ListEventType.Add);
     this.push(obj);
     return;
   }
@@ -671,7 +684,18 @@ export class List<T> extends Array<T>{
    * @param objects The collection whose elements should be added to the end of the List<T>. The collection itself cannot be null, but it can contain elements that are null, if type T is a reference type.
    */
   addRange(objects: T[]) {
+    this.events.next(ListEventType.Add);
     this.push(...objects);
+  }
+
+  assignFrom<U, CommonKey>(from: U[], primaryKey: (o: T) => CommonKey, secondaryKey: (o: U) => CommonKey, assignFn: (to: T, fron: U) => any) {
+    for (const fromObj of from) {
+      for (const toObj of this) {
+        if (primaryKey(toObj) === secondaryKey(fromObj)) {
+          assignFn(toObj, fromObj);
+        }
+      }
+    }
   }
 
   /**
@@ -686,6 +710,7 @@ export class List<T> extends Array<T>{
    * Removes all elements from the List<T>.
    */
   clear() {
+    this.events.next(ListEventType.Clear)
     this.length = 0;
     return;
   }
@@ -755,7 +780,7 @@ export class List<T> extends Array<T>{
    * @param _default Optional default value. Null if not specified.
    * @returns The last element in the List. Note: Does not decouple the returned object.
    */
-  findLast(predicate: (o: T) => boolean, defaultObj?: T, decouple = this.decouple): T | undefined {
+  findLast(predicate: (o: T) => boolean, defaultObj: T | undefined = undefined, decouple = this.decouple): T | undefined {
     const obj = this.last(predicate, decouple);
     if (obj) {
       return decouple ? cloneDeep(obj) : obj;

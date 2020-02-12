@@ -12,6 +12,42 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (this && this.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
 var __spreadArrays = (this && this.__spreadArrays) || function () {
     for (var s = 0, i = 0, il = arguments.length; i < il; i++) s += arguments[i].length;
     for (var r = Array(s), k = 0, i = 0; i < il; i++)
@@ -21,22 +57,77 @@ var __spreadArrays = (this && this.__spreadArrays) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var lodash_1 = require("lodash");
+var rxjs_1 = require("rxjs");
+var List2 = /** @class */ (function () {
+    function List2(values) {
+        this._values = [];
+        this._values = values ? values : [];
+        for (var i = 0; i < this._values.length; i++) {
+            this.defineKey(i);
+        }
+    }
+    Object.defineProperty(List2.prototype, "length", {
+        get: function () {
+            return this._values.length;
+        },
+        set: function (val) {
+            this._values.length = val;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    List2.prototype.defineKey = function (index) {
+        var _this = this;
+        Object.defineProperty(this, index, {
+            get: function () { return _this._values[index]; },
+            set: function (val) { _this._values[1] = val; }
+        });
+    };
+    return List2;
+}());
+exports.List2 = List2;
 var List = /** @class */ (function (_super) {
     __extends(List, _super);
     function List(init, decouple) {
         if (decouple === void 0) { decouple = false; }
-        var _this = this;
-        var initVals = decouple ? lodash_1.cloneDeep(init) : init;
-        if (initVals) {
-            _this = _super.apply(this, initVals) || this;
-        }
-        else {
-            _this = _super.call(this) || this;
-        }
+        var _this = _super.apply(this, (init ? (decouple ? lodash_1.cloneDeep(init) : init) : [])) || this;
+        _this.listeners = new Array();
         Object.setPrototypeOf(_this, Object.create(List.prototype));
         _this.decouple = decouple;
         return _this;
     }
+    List.prototype.broacastListener = function (event) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                return [2 /*return*/, new Promise(function (resolve) {
+                        for (var _i = 0, _a = _this.listeners; _i < _a.length; _i++) {
+                            var listener = _a[_i];
+                            if (listener.event === event) {
+                                listener.subject.next(_this);
+                            }
+                        }
+                    })];
+            });
+        });
+    };
+    List.prototype.on = function (event, fn) {
+        var _this = this;
+        var subject = new rxjs_1.Subject();
+        this.listeners.push({ event: event, subject: subject });
+        var sub = subject.subscribe(function (e) {
+            fn(_this);
+        });
+        return sub;
+    };
+    List.prototype.push = function () {
+        var objs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            objs[_i] = arguments[_i];
+        }
+        this.broacastListener('push');
+        return this.length;
+    };
     /**
      * Determines whether every element in the List<T> matches the conditions defined by the specified predicate.
      * @param predicate Callback function of the conditions to check against the elements.
@@ -90,11 +181,13 @@ var List = /** @class */ (function (_super) {
     };
     /**
      * appends a value to the end of the List<T>.
+     * Proxy for push and add
      * @param obj The object<T> to append to the List<T>
      * @returns Returns the modified List<T>
      */
     List.prototype.append = function (obj) {
-        this.push(obj);
+        this.broacastListener('add');
+        this[this.length] = obj;
         return this;
     };
     // TODO: asList
@@ -699,6 +792,7 @@ var List = /** @class */ (function (_super) {
      * @param obj The object to be added to the end of the List<T>. The value can be null for reference types.
      */
     List.prototype.add = function (obj) {
+        this.broacastListener('add');
         this.push(obj);
         return;
     };
@@ -707,7 +801,19 @@ var List = /** @class */ (function (_super) {
      * @param objects The collection whose elements should be added to the end of the List<T>. The collection itself cannot be null, but it can contain elements that are null, if type T is a reference type.
      */
     List.prototype.addRange = function (objects) {
+        this.broacastListener('add');
         this.push.apply(this, objects);
+    };
+    List.prototype.assignFrom = function (from, primaryKey, secondaryKey, assignFn) {
+        for (var _i = 0, from_1 = from; _i < from_1.length; _i++) {
+            var fromObj = from_1[_i];
+            for (var _a = 0, _b = this; _a < _b.length; _a++) {
+                var toObj = _b[_a];
+                if (primaryKey(toObj) === secondaryKey(fromObj)) {
+                    assignFn(toObj, fromObj);
+                }
+            }
+        }
     };
     /**
      * Uses a binary search algorithm to locate a specific element in the sorted List<T> or a portion of it.
@@ -720,6 +826,7 @@ var List = /** @class */ (function (_super) {
      * Removes all elements from the List<T>.
      */
     List.prototype.clear = function () {
+        this.broacastListener('clear');
         this.length = 0;
         return;
     };
@@ -788,6 +895,7 @@ var List = /** @class */ (function (_super) {
      * @returns The last element in the List. Note: Does not decouple the returned object.
      */
     List.prototype.findLast = function (predicate, defaultObj, decouple) {
+        if (defaultObj === void 0) { defaultObj = undefined; }
         if (decouple === void 0) { decouple = this.decouple; }
         var obj = this.last(predicate, decouple);
         if (obj) {

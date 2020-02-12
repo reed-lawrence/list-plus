@@ -1,40 +1,42 @@
 import { List } from './index';
 
 export class TestClass1 {
+  id: number;
   num: number;
-  constructor(init?: number) {
-    this.num = init || 0;
+  constructor(init?: Partial<TestClass1>) {
+    this.id = init?.id || 0;
+    this.num = init?.num || 0;
   }
 }
 
 export class TestClass2 {
+  pk: number;
   str: string;
 
-  constructor(init?: string) {
-    this.str = init || '';
+  constructor(init?: Partial<TestClass2>) {
+    this.pk = init?.pk || 0;
+    this.str = init?.str || '';
   }
 }
 
-// const list = new List<TestClass1 | TestClass2>([new TestClass1(123), new TestClass2('test')]);
-const list = new List(['test 1', 'test2', 123, 45, 12314, { test: 'str' }, true, false, null, undefined, new TestClass1(), (test: any) => { }, new String('test object')]);
-const test1 = list.ofType(String);
 
-// const list = new List([{ str: 'test1', id: 1 }, { str: 'test2', id: 2 }]);
-// list.splice(1, 1);
-// list.insert({ str: 'test3', id: 3 }, 1);
+const test = new List<TestClass1>([
+  new TestClass1({ id: 1 }),
+  new TestClass1({ id: 2 }),
+  new TestClass1({ id: 3 })
+]);
 
+const test2 = new List<TestClass2>([
+  new TestClass2({ pk: 1, str: '100' }),
+  new TestClass2({ pk: 2, str: 'abcd' }),
+  new TestClass2({ pk: 3, str: '300' })
+]);
 
-// const arr = new Array([{ str: 'test1', id: 1 }, { str: 'test2', id: 2 }]);
-// arr.splice(0, 1);
+test.assignFrom(test2, (o) => o.id, (o) => o.pk, (a, b) => {
+  const parsed = parseInt(b.str);
+  if (!isNaN(parsed)) {
+    a.num = parsed;
+  }
+});
 
-// export class FancyArray<T> extends Array<T>{
-//   constructor(...vals: T[]) {
-//     super(...vals);
-//   }
-// }
-
-// const test = new FancyArray({ str: 'test1', id: 1 }, { str: 'test2', id: 2 });
-// test.splice(1, 1);
-// console.log(test);
-
-console.log(test1);
+console.log(test);

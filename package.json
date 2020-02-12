@@ -4,12 +4,14 @@
   "description": "Simple enhanced array library",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "main": "tsc && node ./main.js"
   },
   "author": "Reed Lawrence",
   "license": "ISC",
   "dependencies": {
-    "lodash": "^4.17.15"
+    "lodash": "^4.17.15",
+    "rxjs": "^6.5.3"
   },
   "devDependencies": {
     "@types/lodash": "^4.14.141"
